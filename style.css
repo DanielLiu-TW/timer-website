@@ -1,0 +1,130 @@
+/* 全局樣式 */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f9f9f9;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #333;
+}
+
+/* 控制面板樣式 */
+#control-panel {
+    margin-bottom: 20px;
+    text-align: center;
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#control-panel h1 {
+    margin: 0 0 15px;
+    color: #0056a6;
+}
+
+#control-panel button {
+    margin: 5px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #007bff;
+    color: #fff;
+    transition: background-color 0.3s ease;
+}
+
+#control-panel button:hover {
+    background-color: #0056a6;
+}
+
+#control-panel button:disabled {
+    background-color: gray;
+    cursor: not-allowed;
+}
+
+#control-panel input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+/* 計時器容器樣式 */
+#timers-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+}
+
+/* 單個計時器樣式 */
+.timer {
+    width: 200px;
+    padding: 15px;
+    text-align: center;
+    background: #fff;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.timer .title {
+    font-weight: bold;
+    margin-bottom: 10px;
+    cursor: pointer;
+}
+
+.timer span {
+    display: block;
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.timer button {
+    margin: 5px;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+    background-color: #007bff;
+    color: #fff;
+    transition: background-color 0.3s ease;
+}
+
+.timer button:hover {
+    background-color: #0056a6;
+}
+
+/* 逾時樣式 */
+.timer span.overdue {
+    color: red;
+    font-weight: bold;
+}
+
+.timer.overdue {
+    border-color: red;
+}
+
+/* 一鍵重製按鈕 */
+#reset-all {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #d9534f;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#reset-all:hover {
+    background-color: #c9302c;
+}
