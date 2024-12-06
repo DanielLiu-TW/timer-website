@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多計時器</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="control-panel">
+        <h1>多計時器控制面板</h1>
+        <label for="timer-selector">選擇計時器：</label>
+        <select id="timer-selector"></select>
+        <input type="number" id="add-time" placeholder="調整秒數 (可正負)">
+        <button id="adjust-time">調整時間</button>
+        <button id="start-all">一鍵開始</button>
+    </div>
+    <div id="timers-container"></div>
+    <button id="reset-all">一鍵重製</button>
+    <script src="script.js"></script>
+</body>
+</html>
