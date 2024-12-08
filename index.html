@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>多計時器</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-auth.js"></script>
 </head>
 <body>
     <div id="control-panel">
@@ -13,10 +16,10 @@
         <select id="timer-selector"></select>
         <input type="number" id="add-time" placeholder="調整秒數 (可正負)">
         <button id="adjust-time">調整時間</button>
-        <button id="start-all">一鍵開始</button>
+        <button id="start-all" disabled>一鍵開始</button>
     </div>
     <div id="timers-container"></div>
-    <button id="reset-all">一鍵重製</button>
+    <button id="reset-all" disabled>一鍵重製</button>
     <script src="script.js"></script>
 </body>
 </html>
