@@ -67,28 +67,21 @@ timerRef.on("value", (snapshot) => {
   });
 });
 
-// 檢查用戶登錄狀態
 firebase.auth().onAuthStateChanged((user) => {
   if (user) {
+    // 用戶已登錄
     currentUser = user;
     console.log("已登錄:", user);
 
     // 驗證是否為控制者
-    if (user.uid === "KMP11IC7TwabAuSigVmri3bMfKp1") {
-      console.log("已驗證為控制者");
-      startAllButton.disabled = false;
-      resetAllButton.disabled = false;
-      adjustTimeButton.disabled = false;
-    } else {
-      console.log("非控制者，僅可檢視");
-    }
+    verifyUserRole(user);
   } else {
-    console.log("未登錄，請登錄");
+    // 未登錄，用戶需要登入
+    console.log("未登錄，觸發登入流程");
     triggerLogin();
   }
 });
 
-// 觸發登入
 function triggerLogin() {
   firebase
     .auth()
@@ -100,28 +93,37 @@ function triggerLogin() {
       const user = result.user;
       console.log("成功登錄用戶:", user);
 
-      if (user.uid === "KMP11IC7TwabAuSigVmri3bMfKp1") {
-        console.log("已驗證為控制者");
-        startAllButton.disabled = false;
-        resetAllButton.disabled = false;
-        adjustTimeButton.disabled = false;
-      } else {
-        console.log("非控制者，僅可檢視");
-      }
+      // 驗證是否為控制者
+      verifyUserRole(user);
     })
     .catch((error) => {
       console.error("登入失敗:", error.message);
-      switch (error.code) {
-        case "auth/popup-closed-by-user":
-          alert("登錄窗口被關閉，請重試");
-          break;
-        case "auth/network-request-failed":
-          alert("網絡問題，請檢查連接");
-          break;
-        default:
-          alert("登錄失敗，請重試");
-      }
+      handleLoginError(error);
     });
+}
+
+function verifyUserRole(user) {
+  if (user.uid === "KMP11IC7TwabAuSigVmri3bMfKp1") {
+    console.log("已驗證為控制者");
+    startAllButton.disabled = false;
+    resetAllButton.disabled = false;
+    adjustTimeButton.disabled = false;
+  } else {
+    console.log("非控制者，僅可檢視");
+  }
+}
+
+function handleLoginError(error) {
+  switch (error.code) {
+    case "auth/popup-closed-by-user":
+      alert("登錄窗口被關閉，請重試");
+      break;
+    case "auth/network-request-failed":
+      alert("網絡問題，請檢查連接");
+      break;
+    default:
+      alert("登錄失敗，請重試");
+  }
 }
 
 // 本地計時邏輯和 Firebase 同步集成
