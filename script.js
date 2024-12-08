@@ -80,7 +80,21 @@
       .catch((error) => {
           console.error("登入失敗", error);
       });
-  
+
+  firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+    .then(() => {
+        return firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
+    })
+    .then((result) => {
+        const user = result.user;
+        console.log("成功登錄用戶:", user);
+        // 這裡處理登錄成功的邏輯
+    })
+    .catch((error) => {
+        console.error("登入失敗:", error.message);
+        console.error("錯誤代碼:", error.code);
+    });
+
   // 本地計時邏輯和 Firebase 同步集成
   function startTimer(display) {
       if (display.timerId) return;
