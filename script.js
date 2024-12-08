@@ -1,13 +1,13 @@
-const firebaseConfig = {
-  apiKey: "AIzaSyBmhwIKZwJHRbb_z2UZw6fQwzuZJTbmZQ8",
-  authDomain: "timer-control-e6036.firebaseapp.com",
-  databaseURL: "https://timer-control-e6036-default-rtdb.firebaseio.com",
-  projectId: "timer-control-e6036",
-  storageBucket: "timer-control-e6036.appspot.com",
-  messagingSenderId: "568777043775",
-  appId: "1:568777043775:web:ad1559dbd0909a4132ad8a",
-  measurementId: "G-W288ZF1TFR"
-};
+  const firebaseConfig = {
+    apiKey: "AIzaSyBmhwIKZwJHRbb_z2UZw6fQwzuZJTbmZQ8",
+    authDomain: "timer-control-e6036.firebaseapp.com",
+    databaseURL: "https://timer-control-e6036-default-rtdb.firebaseio.com",
+    projectId: "timer-control-e6036",
+    storageBucket: "timer-control-e6036.appspot.com",
+    messagingSenderId: "568777043775",
+    appId: "1:568777043775:web:ad1559dbd0909a4132ad8a",
+    measurementId: "G-W288ZF1TFR"
+  };
 
   // 初始化 Firebase
   firebase.initializeApp(firebaseConfig);
