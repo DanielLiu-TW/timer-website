@@ -63,32 +63,50 @@
           updateTimerUI(timerId, timers[timerId]);
       });
   });
-  
-  // 登錄與權限控制
+
+// 檢查用戶登錄狀態
+firebase.auth().onAuthStateChanged((user) => {
+  if (user) {
+    console.log("已登錄:", user);
+    // 驗證是否為控制者
+    if (user.uid === "KMP11IC7TwabAuSigVmri3bMfKp1") {
+      console.log("已驗證為控制者");
+      startAllButton.disabled = false;
+      resetAllButton.disabled = false;
+      adjustTimeButton.disabled = false;
+    } else {
+      console.log("非控制者，僅可檢視");
+    }
+  } else {
+    console.log("未登錄，請登錄");
+    // 如果沒有登錄，顯示登錄界面或進行登錄
+  }
+});
+
   // 設置 Firebase 登錄持久性為 LOCAL
   firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-    .then(() => {
-      // 在這裡進行 Google 登錄
-      return firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
-    })
-    .then((result) => {
-      const user = result.user;
-      console.log("成功登錄用戶:", user);
-  
-      // 驗證是否為控制者
-      if (user.uid === "KMP11IC7TwabAuSigVmri3bMfKp1") {
-        console.log("已驗證為控制者");
-        startAllButton.disabled = false;
-        resetAllButton.disabled = false;
-        adjustTimeButton.disabled = false;
-      } else {
-        console.log("非控制者，僅可檢視");
-      }
-    })
-    .catch((error) => {
-      console.error("登入失敗:", error.message);
-      console.error("錯誤代碼:", error.code);
-    });
+  .then(() => {
+    // 在這裡進行 Google 登錄
+    return firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
+  })
+  .then((result) => {
+    const user = result.user;
+    console.log("成功登錄用戶:", user);
+
+    // 驗證是否為控制者
+    if (user.uid === "KMP11IC7TwabAuSigVmri3bMfKp1") {
+      console.log("已驗證為控制者");
+      startAllButton.disabled = false;
+      resetAllButton.disabled = false;
+      adjustTimeButton.disabled = false;
+    } else {
+      console.log("非控制者，僅可檢視");
+    }
+  })
+  .catch((error) => {
+    console.error("登入失敗:", error.message);
+    console.error("錯誤代碼:", error.code);
+  });
 
 
   // 本地計時邏輯和 Firebase 同步集成
