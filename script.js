@@ -13,7 +13,6 @@ const firebaseConfig = {
 // 初始化 Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-const auth = firebase.auth();
 const timerRef = db.ref("timers");
 
 // DOM 元素
@@ -34,6 +33,13 @@ function updateTimerUI(timerId, timerData) {
     timerElement.id = timerId;
     timerElement.classList.add("timer");
 
+    // 創建名稱顯示（支持雙擊修改）
+    const nameDisplay = document.createElement("div");
+    nameDisplay.className = "name-display";
+    nameDisplay.textContent = timerData.name || `計時器 ${timerId}`;
+    nameDisplay.addEventListener("dblclick", () => editTimerName(timerId, nameDisplay));
+    timerElement.appendChild(nameDisplay);
+
     // 創建時間顯示
     const timeDisplay = document.createElement("span");
     timeDisplay.className = "time-display";
@@ -44,9 +50,9 @@ function updateTimerUI(timerId, timerData) {
     startPauseButton.className = "start-pause-btn";
     startPauseButton.addEventListener("click", () => {
       if (timerData.isRunning) {
-        pauseTimer(timeDisplay, timerId);
+        pauseTimer(timerId);
       } else {
-        startTimer(timeDisplay, timerId);
+        startTimer(timerId);
       }
     });
     timerElement.appendChild(startPauseButton);
@@ -66,12 +72,11 @@ function updateTimerUI(timerId, timerData) {
   const timeDisplay = timerElement.querySelector(".time-display");
   const startPauseButton = timerElement.querySelector(".start-pause-btn");
 
+  nameDisplay.textContent = timerData.name || `計時器 ${timerId}`;
   timeDisplay.textContent =
     timerData.remainingTime >= 0
       ? `倒數：${formatTime(timerData.remainingTime)}`
       : `逾時：${formatTime(-timerData.remainingTime)}`;
-  timeDisplay.dataset.remainingTime = timerData.remainingTime;
-
   startPauseButton.textContent = timerData.isRunning ? "暫停" : "開始";
 
   if (timerData.remainingTime < 0) {
@@ -95,74 +100,57 @@ timerRef.on("value", (snapshot) => {
   });
 });
 
-// 檢查用戶登錄狀態
-firebase.auth().onAuthStateChanged((user) => {
-  if (user) {
-    console.log("已登錄:", user);
-    currentUser = user;
-
-    // 驗證是否為控制者
-    if (user.uid === "KMP11IC7TwabAuSigVmri3bMfKp1") {
-      console.log("已驗證為控制者");
-      startAllButton.disabled = false;
-      resetAllButton.disabled = false;
-    } else {
-      console.log("非控制者，僅可檢視");
-    }
-  } else {
-    console.log("未登錄，請登錄");
-  }
-});
-
-// 設置 Firebase 登錄持久性為 LOCAL 並進行登錄
-firebase.auth()
-  .setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-  .then(() => firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()))
-  .catch((error) => {
-    console.error("登入失敗:", error.message);
-  });
-
-// 本地計時邏輯和 Firebase 同步
-function startTimer(display, timerId) {
-  if (display.timerId) return;
-
-  display.timerId = setInterval(() => {
-    let time = parseInt(display.dataset.remainingTime, 10);
-    time -= 1;
-    display.dataset.remainingTime = time;
-
-    // 寫入 Firebase
-    timerRef.child(timerId).update({
-      remainingTime: time,
-      isRunning: true
-    });
-
-    if (time < 0) {
-      display.textContent = `逾時：${formatTime(-time)}`;
-      display.classList.add("overdue");
-    } else {
-      display.textContent = `倒數：${formatTime(time)}`;
-    }
-  }, 1000);
-}
-
-function pauseTimer(display, timerId) {
-  if (display.timerId) {
-    clearInterval(display.timerId);
-    delete display.timerId;
-
-    // 更新 Firebase 狀態
-    timerRef.child(timerId).update({
-      isRunning: false
-    });
-  }
-}
-
-function resetTimer(timerId) {
+// 開始計時
+function startTimer(timerId) {
   timerRef.child(timerId).update({
-    remainingTime: 600,
+    isRunning: true
+  });
+}
+
+// 暫停計時
+function pauseTimer(timerId) {
+  timerRef.child(timerId).update({
     isRunning: false
   });
+}
+
+// 重置計時器
+function resetTimer(timerId) {
+  timerRef.child(timerId).update({
+    remainingTime: 600, // 重置為 10 分鐘
+    isRunning: false
+  });
+}
+
+// 全局開始/暫停
+startAllButton.addEventListener("click", () => {
+  timerRef.once("value", (snapshot) => {
+    const timers = snapshot.val() || {};
+    Object.keys(timers).forEach((timerId) => {
+      timerRef.child(timerId).update({ isRunning: true });
+    });
+  });
+});
+
+// 全局重置
+resetAllButton.addEventListener("click", () => {
+  timerRef.once("value", (snapshot) => {
+    const timers = snapshot.val() || {};
+    Object.keys(timers).forEach((timerId) => {
+      timerRef.child(timerId).update({
+        remainingTime: 600,
+        isRunning: false
+      });
+    });
+  });
+});
+
+// 編輯計時器名稱
+function editTimerName(timerId, nameDisplay) {
+  const newName = prompt("請輸入新的計時器名稱：", nameDisplay.textContent);
+  if (newName) {
+    timerRef.child(timerId).update({ name: newName });
+  }
 }
 
 // 工具函數
