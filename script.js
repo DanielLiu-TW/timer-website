@@ -1,29 +1,3 @@
-// Firebase 配置
-const firebaseConfig = {
-  apiKey: "AIzaSyBmhwIKZwJHRbb_z2UZw6fQwzuZJTbmZQ8",
-  authDomain: "timer-control-e6036.firebaseapp.com",
-  databaseURL: "https://timer-control-e6036-default-rtdb.firebaseio.com",
-  projectId: "timer-control-e6036",
-  storageBucket: "timer-control-e6036.appspot.com",
-  messagingSenderId: "568777043775",
-  appId: "1:568777043775:web:ad1559dbd0909a4132ad8a",
-  measurementId: "G-W288ZF1TFR"
-};
-
-// 初始化 Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const timerRef = db.ref("timers");
-
-// DOM 元素
-const container = document.getElementById("timers-container");
-const startAllButton = document.getElementById("start-all");
-const resetAllButton = document.getElementById("reset-all");
-
-// 初始化狀態
-let currentUser = null;
-
-// 更新計時器 UI
 function updateTimerUI(timerId, timerData) {
   let timerElement = document.getElementById(timerId);
 
@@ -69,6 +43,7 @@ function updateTimerUI(timerId, timerData) {
   }
 
   // 更新 UI
+  const nameDisplay = timerElement.querySelector(".name-display");
   const timeDisplay = timerElement.querySelector(".time-display");
   const startPauseButton = timerElement.querySelector(".start-pause-btn");
 
@@ -86,76 +61,4 @@ function updateTimerUI(timerId, timerData) {
     timeDisplay.classList.remove("overdue");
     timerElement.classList.remove("overdue");
   }
-}
-
-// 監聽 Firebase 數據變化
-timerRef.on("value", (snapshot) => {
-  const timers = snapshot.val() || {};
-
-  // 清空計時器容器以避免重複添加
-  container.innerHTML = "";
-
-  Object.keys(timers).forEach((timerId) => {
-    updateTimerUI(timerId, timers[timerId]);
-  });
-});
-
-// 開始計時
-function startTimer(timerId) {
-  timerRef.child(timerId).update({
-    isRunning: true
-  });
-}
-
-// 暫停計時
-function pauseTimer(timerId) {
-  timerRef.child(timerId).update({
-    isRunning: false
-  });
-}
-
-// 重置計時器
-function resetTimer(timerId) {
-  timerRef.child(timerId).update({
-    remainingTime: 600, // 重置為 10 分鐘
-    isRunning: false
-  });
-}
-
-// 全局開始/暫停
-startAllButton.addEventListener("click", () => {
-  timerRef.once("value", (snapshot) => {
-    const timers = snapshot.val() || {};
-    Object.keys(timers).forEach((timerId) => {
-      timerRef.child(timerId).update({ isRunning: true });
-    });
-  });
-});
-
-// 全局重置
-resetAllButton.addEventListener("click", () => {
-  timerRef.once("value", (snapshot) => {
-    const timers = snapshot.val() || {};
-    Object.keys(timers).forEach((timerId) => {
-      timerRef.child(timerId).update({
-        remainingTime: 600,
-        isRunning: false
-      });
-    });
-  });
-});
-
-// 編輯計時器名稱
-function editTimerName(timerId, nameDisplay) {
-  const newName = prompt("請輸入新的計時器名稱：", nameDisplay.textContent);
-  if (newName) {
-    timerRef.child(timerId).update({ name: newName });
-  }
-}
-
-// 工具函數
-function formatTime(seconds) {
-  const minutes = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 }
