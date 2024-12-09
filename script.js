@@ -145,19 +145,38 @@ startAllButton.addEventListener("click", () => {
 
 // 全局重置
 resetAllButton.addEventListener("click", () => {
-  if (currentUser.uid !== "KMP11IC7TwabAuSigVmri3bMfKp1") {
+  // 檢查授權
+  if (!currentUser || currentUser.uid !== "KMP11IC7TwabAuSigVmri3bMfKp1") {
     alert("您無權操作計時器！");
     return;
   }
+
+  // 獲取所有計時器並重置
   timerRef.once("value", (snapshot) => {
+    const timers = snapshot.val();
+    if (!timers) {
+      alert("沒有可操作的計時器！");
+      return;
+    }
+
+    // 批量更新
     const updates = {};
-    snapshot.forEach((child) => {
-      updates[`${child.key}/remainingTime`] = 600;
-      updates[`${child.key}/isRunning`] = false;
+    Object.keys(timers).forEach((timerId) => {
+      updates[`${timerId}/remainingTime`] = 600; // 重置為 10 分鐘
+      updates[`${timerId}/isRunning`] = false;  // 停止運行
     });
-    timerRef.update(updates);
+
+    // 更新 Firebase
+    timerRef.update(updates)
+      .then(() => {
+        console.log("所有計時器已重置");
+      })
+      .catch((error) => {
+        console.error("重置計時器時發生錯誤：", error);
+      });
   });
 });
+
 
 // 調整時間
 adjustTimeButton.addEventListener("click", () => {
