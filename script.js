@@ -20,8 +20,6 @@ const timerRef = db.ref("timers");
 const container = document.getElementById("timers-container");
 const startAllButton = document.getElementById("start-all");
 const resetAllButton = document.getElementById("reset-all");
-const adjustTimeButton = document.getElementById("adjust-time");
-const timerSelector = document.getElementById("timer-selector");
 
 // 初始化狀態
 let currentUser = null;
@@ -38,16 +36,12 @@ function updateTimerUI(timerId, timerData) {
 
     // 創建時間顯示
     const timeDisplay = document.createElement("span");
+    timeDisplay.className = "time-display";
     timerElement.appendChild(timeDisplay);
 
     // 創建開始/暫停按鈕
     const startPauseButton = document.createElement("button");
-    timerElement.appendChild(startPauseButton);
-
-    // 添加計時器到容器
-    container.appendChild(timerElement);
-
-    // 設置按鈕行為
+    startPauseButton.className = "start-pause-btn";
     startPauseButton.addEventListener("click", () => {
       if (timerData.isRunning) {
         pauseTimer(timeDisplay, timerId);
@@ -55,11 +49,22 @@ function updateTimerUI(timerId, timerData) {
         startTimer(timeDisplay, timerId);
       }
     });
+    timerElement.appendChild(startPauseButton);
+
+    // 創建重置按鈕
+    const resetButton = document.createElement("button");
+    resetButton.className = "reset-btn";
+    resetButton.textContent = "重置";
+    resetButton.addEventListener("click", () => resetTimer(timerId));
+    timerElement.appendChild(resetButton);
+
+    // 添加計時器到容器
+    container.appendChild(timerElement);
   }
 
   // 更新 UI
-  const timeDisplay = timerElement.querySelector("span");
-  const startPauseButton = timerElement.querySelector("button");
+  const timeDisplay = timerElement.querySelector(".time-display");
+  const startPauseButton = timerElement.querySelector(".start-pause-btn");
 
   timeDisplay.textContent =
     timerData.remainingTime >= 0
@@ -101,7 +106,6 @@ firebase.auth().onAuthStateChanged((user) => {
       console.log("已驗證為控制者");
       startAllButton.disabled = false;
       resetAllButton.disabled = false;
-      adjustTimeButton.disabled = false;
     } else {
       console.log("非控制者，僅可檢視");
     }
@@ -114,9 +118,6 @@ firebase.auth().onAuthStateChanged((user) => {
 firebase.auth()
   .setPersistence(firebase.auth.Auth.Persistence.LOCAL)
   .then(() => firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()))
-  .then((result) => {
-    console.log("成功登錄用戶:", result.user);
-  })
   .catch((error) => {
     console.error("登入失敗:", error.message);
   });
@@ -155,6 +156,13 @@ function pauseTimer(display, timerId) {
       isRunning: false
     });
   }
+}
+
+function resetTimer(timerId) {
+  timerRef.child(timerId).update({
+    remainingTime: 600,
+    isRunning: false
+  });
 }
 
 // 工具函數
