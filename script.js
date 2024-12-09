@@ -21,6 +21,7 @@ const startAllButton = document.getElementById("start-all");
 const resetAllButton = document.getElementById("reset-all");
 const adjustTimeButton = document.getElementById("adjust-time");
 const timerSelector = document.getElementById("timer-selector");
+const addTimeInput = document.getElementById("add-time");
 
 // 初始化狀態
 let currentUser = null;
@@ -30,6 +31,9 @@ firebase.auth().onAuthStateChanged((user) => {
   if (user) {
     currentUser = user;
     console.log(`用戶已登入：${user.email}`);
+    if (currentUser.uid !== "KMP11IC7TwabAuSigVmri3bMfKp1") {
+      alert("您僅可檢視，無法修改計時器！");
+    }
   } else {
     console.log("未登入，請先登入");
     firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(console.error);
@@ -106,6 +110,10 @@ timerRef.on("value", (snapshot) => {
 
 // 開始/暫停
 function toggleStartPause(display, button, timerId) {
+  if (currentUser.uid !== "KMP11IC7TwabAuSigVmri3bMfKp1") {
+    alert("您無權操作計時器！");
+    return;
+  }
   const isRunning = button.textContent === "開始";
   timerRef.child(timerId).update({ isRunning });
   button.textContent = isRunning ? "暫停" : "開始";
@@ -113,11 +121,19 @@ function toggleStartPause(display, button, timerId) {
 
 // 重置計時器
 function resetTimer(timerId) {
+  if (currentUser.uid !== "KMP11IC7TwabAuSigVmri3bMfKp1") {
+    alert("您無權操作計時器！");
+    return;
+  }
   timerRef.child(timerId).update({ remainingTime: 600, isRunning: false });
 }
 
 // 全局開始
 startAllButton.addEventListener("click", () => {
+  if (currentUser.uid !== "KMP11IC7TwabAuSigVmri3bMfKp1") {
+    alert("您無權操作計時器！");
+    return;
+  }
   timerRef.once("value", (snapshot) => {
     const updates = {};
     snapshot.forEach((child) => {
@@ -129,6 +145,10 @@ startAllButton.addEventListener("click", () => {
 
 // 全局重置
 resetAllButton.addEventListener("click", () => {
+  if (currentUser.uid !== "KMP11IC7TwabAuSigVmri3bMfKp1") {
+    alert("您無權操作計時器！");
+    return;
+  }
   timerRef.once("value", (snapshot) => {
     const updates = {};
     snapshot.forEach((child) => {
@@ -141,12 +161,17 @@ resetAllButton.addEventListener("click", () => {
 
 // 調整時間
 adjustTimeButton.addEventListener("click", () => {
+  if (currentUser.uid !== "KMP11IC7TwabAuSigVmri3bMfKp1") {
+    alert("您無權操作計時器！");
+    return;
+  }
   const timerId = timerSelector.value;
-  const adjustment = parseInt(prompt("請輸入時間調整值（秒）："), 10);
+  const adjustment = parseInt(addTimeInput.value, 10);
   if (timerId && !isNaN(adjustment)) {
     timerRef.child(timerId).once("value", (snapshot) => {
       const newTime = (snapshot.val().remainingTime || 0) + adjustment;
       timerRef.child(timerId).update({ remainingTime: newTime });
+      addTimeInput.value = ""; // 清空輸入框
     });
   } else {
     alert("請選擇計時器並輸入有效的數值！");
@@ -155,6 +180,10 @@ adjustTimeButton.addEventListener("click", () => {
 
 // 修改名稱
 function enterEditMode(titleDisplay, timerId) {
+  if (currentUser.uid !== "KMP11IC7TwabAuSigVmri3bMfKp1") {
+    alert("您無權修改名稱！");
+    return;
+  }
   const newName = prompt("請輸入新的名稱：", titleDisplay.textContent);
   if (newName) {
     timerRef.child(timerId).update({ title: newName });
