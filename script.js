@@ -1,217 +1,261 @@
-// Firebase 配置
-const firebaseConfig = {
-  apiKey: "AIzaSyBmhwIKZwJHRbb_z2UZw6fQwzuZJTbmZQ8",
-  authDomain: "timer-control-e6036.firebaseapp.com",
-  databaseURL: "https://timer-control-e6036-default-rtdb.firebaseio.com",
-  projectId: "timer-control-e6036",
-  storageBucket: "timer-control-e6036.appspot.com",
-  messagingSenderId: "568777043775",
-  appId: "1:568777043775:web:ad1559dbd0909a4132ad8a",
-  measurementId: "G-W288ZF1TFR"
-};
+document.addEventListener("DOMContentLoaded", () => {
+    const container = document.getElementById("timers-container");
+    const startAllButton = document.getElementById("start-all");
+    const resetAllButton = document.getElementById("reset-all");
+    const adjustTimeButton = document.getElementById("adjust-time");
+    const timerSelector = document.getElementById("timer-selector");
 
-// 初始化 Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const timerRef = db.ref("timers");
+    const savedState = JSON.parse(localStorage.getItem("timersState")) || {
+        timers: {},
+        isStartAllDisabled: false,
+    };
 
-// DOM 元素
-const container = document.getElementById("timers-container");
-const startAllButton = document.getElementById("start-all");
-const resetAllButton = document.getElementById("reset-all");
-const adjustTimeButton = document.getElementById("adjust-time");
-const timerSelector = document.getElementById("timer-selector");
-const addTimeInput = document.getElementById("add-time");
+    console.log("Restoring saved state:", savedState); // 除錯訊息
 
-// 初始化狀態
-let currentUser = null;
-
-// Firebase 登錄狀態檢查
-firebase.auth().onAuthStateChanged((user) => {
-  if (user) {
-    currentUser = user;
-    console.log(`用戶已登入：${user.email}`);
-    if (currentUser.uid !== "KMP11IC7TwabAuSigVmri3bMfKp1") {
-      alert("您僅可檢視，無法修改計時器！");
+    // 初始化計時器
+    for (let i = 1; i <= 10; i++) {
+        createTimer(i, savedState.timers[`timer${i}`]);
     }
-  } else {
-    console.log("未登入，請先登入");
-    firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(console.error);
-  }
+
+    // 恢復一鍵開始按鈕狀態
+    startAllButton.disabled = savedState.isStartAllDisabled;
+    startAllButton.style.backgroundColor = savedState.isStartAllDisabled ? "gray" : "";
+
+    // 綁定事件
+    startAllButton.addEventListener("click", toggleAllTimers);
+    resetAllButton.addEventListener("click", resetAllTimers);
+    adjustTimeButton.addEventListener("click", adjustTime);
+
+    // 保存計時器狀態
+    window.addEventListener("beforeunload", saveTimersState);
 });
 
-// 更新計時器 UI
-function updateTimerUI(timerId, timerData) {
-  let timerElement = document.getElementById(timerId);
+function toggleAllTimers() {
+    const timers = document.querySelectorAll(".timer span");
+    const isAnyRunning = Array.from(timers).some(timer => timer.timerId);
 
-  if (!timerElement) {
-    timerElement = document.createElement("div");
-    timerElement.id = timerId;
-    timerElement.className = "timer";
+    timers.forEach(timer => {
+        const button = timer.closest(".timer").querySelector("button:first-of-type");
+        if (isAnyRunning) {
+            pauseTimer(timer);
+            button.textContent = "開始";
+        } else {
+            startTimer(timer);
+            button.textContent = "暫停";
+        }
+    });
 
-    // 創建名稱顯示
+    // 檢查是否需要禁用一鍵開始按鈕
+    const startAllButton = document.getElementById("start-all");
+    const allTimersStopped = Array.from(timers).every(timer => !timer.timerId);
+    startAllButton.disabled = !allTimersStopped;
+    startAllButton.style.backgroundColor = allTimersStopped ? "" : "gray";
+}
+
+function resetAllTimers() {
+    if (!confirm("確定要一鍵重製所有計時器嗎？")) return;
+
+    const timers = document.querySelectorAll(".timer");
+    timers.forEach(timer => {
+        const timeDisplay = timer.querySelector("span");
+        const button = timer.querySelector("button:first-of-type");
+        pauseTimer(timeDisplay);
+        timeDisplay.dataset.remainingTime = 1200; // 一鍵重製為 20 分鐘
+        timeDisplay.textContent = `倒數：20:00`;
+        timeDisplay.classList.remove("overdue");
+        timer.classList.remove("overdue");
+        button.textContent = "開始";
+    });
+
+    // 恢復一鍵開始按鈕
+    const startAllButton = document.getElementById("start-all");
+    startAllButton.disabled = false;
+    startAllButton.style.backgroundColor = "";
+    startAllButton.textContent = "一鍵開始";
+}
+
+
+function createTimer(index, savedState = null) {
+    console.log(`Creating timer ${index}`); // 除錯訊息
+    const timerDiv = document.createElement("div");
+    timerDiv.className = "timer";
+    timerDiv.id = `timer${index}`;
+
     const titleDisplay = document.createElement("div");
     titleDisplay.className = "title";
-    titleDisplay.textContent = timerData.title || `計時器 ${timerId}`;
-    titleDisplay.addEventListener("dblclick", () => {
-      if (currentUser.uid === "KMP11IC7TwabAuSigVmri3bMfKp1") {
-        enterEditMode(titleDisplay, timerId);
-      } else {
-        alert("您無權修改計時器名稱！");
-      }
-    });
-    timerElement.appendChild(titleDisplay);
+    titleDisplay.textContent = savedState?.title || `計時器 ${index}`;
+    titleDisplay.addEventListener("dblclick", () => enterEditMode(titleDisplay));
 
-    // 創建時間顯示
     const timeDisplay = document.createElement("span");
-    timeDisplay.className = "time-display";
-    timeDisplay.dataset.remainingTime = timerData.remainingTime || 600;
-    timeDisplay.textContent = formatTime(timerData.remainingTime || 600);
-    timerElement.appendChild(timeDisplay);
+    const remainingTime = savedState?.remainingTime || 1200; // 初始時間 20 分鐘
+    timeDisplay.dataset.remainingTime = remainingTime;
+    timeDisplay.textContent = `倒數：${formatTime(remainingTime)}`;
 
-    // 創建按鈕
     const startPauseButton = document.createElement("button");
-    startPauseButton.textContent = timerData.isRunning ? "暫停" : "開始";
-    startPauseButton.onclick = () => toggleStartPause(timeDisplay, startPauseButton, timerId);
-    timerElement.appendChild(startPauseButton);
+    startPauseButton.textContent = savedState?.isRunning ? "暫停" : "開始";
+    startPauseButton.onclick = () => toggleStartPause(timeDisplay, startPauseButton);
 
     const resetButton = document.createElement("button");
     resetButton.textContent = "重置";
-    resetButton.onclick = () => resetTimer(timerId);
-    timerElement.appendChild(resetButton);
+    resetButton.onclick = () => resetTimer(timerDiv, timeDisplay, startPauseButton);
 
-    container.appendChild(timerElement);
+    timerDiv.appendChild(titleDisplay);
+    timerDiv.appendChild(timeDisplay);
+    timerDiv.appendChild(startPauseButton);
+    timerDiv.appendChild(resetButton);
+    document.getElementById("timers-container").appendChild(timerDiv);
 
-    // 更新下拉選單
+    // 更新選擇下拉框
     const option = document.createElement("option");
-    option.value = timerId;
-    option.textContent = timerData.title || `計時器 ${timerId}`;
-    timerSelector.appendChild(option);
-  }
+    option.value = `timer${index}`;
+    option.textContent = titleDisplay.textContent; // 使用當前名稱
+    document.getElementById("timer-selector").appendChild(option);
 
-  // 更新計時器狀態
-  const titleDisplay = timerElement.querySelector(".title");
-  const timeDisplay = timerElement.querySelector(".time-display");
-  const startPauseButton = timerElement.querySelector("button:first-of-type");
-
-  titleDisplay.textContent = timerData.title || `計時器 ${timerId}`;
-  timeDisplay.dataset.remainingTime = timerData.remainingTime || 600;
-  timeDisplay.textContent = formatTime(timerData.remainingTime || 600);
-  startPauseButton.textContent = timerData.isRunning ? "暫停" : "開始";
+    // 如果計時器正在運行，重新啟動
+    if (savedState?.isRunning) {
+        startTimer(timeDisplay, startPauseButton);
+    }
+}
+function toggleStartPause(display, button) {
+    if (button.textContent === "開始") {
+        button.textContent = "暫停";
+        startTimer(display);
+    } else {
+        button.textContent = "開始";
+        pauseTimer(display);
+    }
 }
 
-// 監聽 Firebase 數據
-timerRef.on("value", (snapshot) => {
-  const timers = snapshot.val() || {};
-  container.innerHTML = "";
-  timerSelector.innerHTML = ""; // 清空下拉選單
-  Object.keys(timers).forEach((timerId) => updateTimerUI(timerId, timers[timerId]));
-});
+function startTimer(display) {
+    if (display.timerId) return;
 
-// 開始/暫停
-function toggleStartPause(display, button, timerId) {
-  if (currentUser.uid !== "KMP11IC7TwabAuSigVmri3bMfKp1") {
-    alert("您無權操作計時器！");
-    return;
-  }
-  const isRunning = button.textContent === "開始";
-  timerRef.child(timerId).update({ isRunning });
-  button.textContent = isRunning ? "暫停" : "開始";
+    display.timerId = setInterval(() => {
+        let time = parseInt(display.dataset.remainingTime, 10);
+        time -= 1;
+        display.dataset.remainingTime = time;
+
+        if (time >= 0) {
+            display.textContent = `倒數：${formatTime(time)}`;
+        } else {
+            display.textContent = `逾時：${formatTime(-time)}`;
+            display.classList.add("overdue");
+            display.closest(".timer").classList.add("overdue");
+        }
+    }, 1000);
 }
 
-// 重置計時器
-function resetTimer(timerId) {
-  if (currentUser.uid !== "KMP11IC7TwabAuSigVmri3bMfKp1") {
-    alert("您無權操作計時器！");
-    return;
-  }
-  timerRef.child(timerId).update({ remainingTime: 600, isRunning: false });
+function pauseTimer(display) {
+    if (display.timerId) {
+        clearInterval(display.timerId);
+        delete display.timerId;
+    }
 }
 
-// 全局開始
-startAllButton.addEventListener("click", () => {
-  if (currentUser.uid !== "KMP11IC7TwabAuSigVmri3bMfKp1") {
-    alert("您無權操作計時器！");
-    return;
-  }
-  timerRef.once("value", (snapshot) => {
-    const updates = {};
-    snapshot.forEach((child) => {
-      updates[`${child.key}/isRunning`] = true;
+function resetTimer(timerDiv, display, button) {
+    pauseTimer(display);
+    display.dataset.remainingTime = 600; // 單一重置為 10 分鐘
+    display.textContent = `倒數：10:00`;
+    display.classList.remove("overdue");
+    timerDiv.classList.remove("overdue");
+    button.textContent = "開始";
+}
+
+function resetAllTimers() {
+    if (!confirm("確定要一鍵重製所有計時器嗎？")) return;
+
+    const timers = document.querySelectorAll(".timer");
+    timers.forEach(timer => {
+        const timeDisplay = timer.querySelector("span");
+        const button = timer.querySelector("button:first-of-type");
+        pauseTimer(timeDisplay);
+        timeDisplay.dataset.remainingTime = 1200; // 一鍵重製為 20 分鐘
+        timeDisplay.textContent = `倒數：20:00`;
+        timeDisplay.classList.remove("overdue");
+        timer.classList.remove("overdue");
+        button.textContent = "開始";
     });
-    timerRef.update(updates);
-  });
-});
 
-// 全局重置
-resetAllButton.addEventListener("click", () => {
-  // 檢查授權
-  if (!currentUser || currentUser.uid !== "KMP11IC7TwabAuSigVmri3bMfKp1") {
-    alert("您無權操作計時器！");
-    return;
-  }
+    // 恢復一鍵開始按鈕
+    const startAllButton = document.getElementById("start-all");
+    startAllButton.disabled = false;
+    startAllButton.style.backgroundColor = "";
+    startAllButton.textContent = "一鍵開始";
+}
 
-  // 獲取所有計時器並重置
-  timerRef.once("value", (snapshot) => {
-    const timers = snapshot.val();
-    if (!timers) {
-      alert("沒有可操作的計時器！");
-      return;
+
+function adjustTime() {
+    const timerId = document.getElementById("timer-selector").value;
+    const adjustment = parseInt(document.getElementById("add-time").value, 10);
+
+    if (isNaN(adjustment)) {
+        alert("請輸入有效的調整值！");
+        return;
     }
 
-    // 批量更新
-    const updates = {};
-    Object.keys(timers).forEach((timerId) => {
-      updates[`${timerId}/remainingTime`] = 600; // 重置為 10 分鐘
-      updates[`${timerId}/isRunning`] = false;  // 停止運行
-    });
+    const timer = document.querySelector(`#${timerId} span`);
+    if (timer) {
+        let newTime = parseInt(timer.dataset.remainingTime, 10) + adjustment;
+        timer.dataset.remainingTime = newTime;
+        timer.textContent = newTime >= 0 ? `倒數：${formatTime(newTime)}` : `逾時：${formatTime(-newTime)}`;
 
-    // 更新 Firebase
-    timerRef.update(updates)
-      .then(() => {
-        console.log("所有計時器已重置");
-      })
-      .catch((error) => {
-        console.error("重置計時器時發生錯誤：", error);
-      });
-  });
-});
-
-
-// 調整時間
-adjustTimeButton.addEventListener("click", () => {
-  if (currentUser.uid !== "KMP11IC7TwabAuSigVmri3bMfKp1") {
-    alert("您無權操作計時器！");
-    return;
-  }
-  const timerId = timerSelector.value;
-  const adjustment = parseInt(addTimeInput.value, 10);
-  if (timerId && !isNaN(adjustment)) {
-    timerRef.child(timerId).once("value", (snapshot) => {
-      const newTime = (snapshot.val().remainingTime || 0) + adjustment;
-      timerRef.child(timerId).update({ remainingTime: newTime });
-      addTimeInput.value = ""; // 清空輸入框
-    });
-  } else {
-    alert("請選擇計時器並輸入有效的數值！");
-  }
-});
-
-// 修改名稱
-function enterEditMode(titleDisplay, timerId) {
-  if (currentUser.uid !== "KMP11IC7TwabAuSigVmri3bMfKp1") {
-    alert("您無權修改名稱！");
-    return;
-  }
-  const newName = prompt("請輸入新的名稱：", titleDisplay.textContent);
-  if (newName) {
-    timerRef.child(timerId).update({ title: newName });
-  }
+        if (newTime < 0) {
+            timer.classList.add("overdue");
+            timer.closest(".timer").classList.add("overdue");
+        } else {
+            timer.classList.remove("overdue");
+            timer.closest(".timer").classList.remove("overdue");
+        }
+    }
 }
 
-// 格式化時間
+
 function formatTime(seconds) {
-  const minutes = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+}
+
+function enterEditMode(titleDisplay) {
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = titleDisplay.textContent;
+    input.addEventListener("blur", () => saveTitle(input, titleDisplay));
+    input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") input.blur();
+    });
+
+    titleDisplay.textContent = "";
+    titleDisplay.appendChild(input);
+    input.focus();
+}
+
+function saveTitle(input, titleDisplay) {
+    const newTitle = input.value.trim() || titleDisplay.dataset.defaultTitle;
+    titleDisplay.textContent = newTitle;
+
+    const timerId = titleDisplay.closest(".timer").id;
+    const option = document.querySelector(`#timer-selector option[value="${timerId}"]`);
+    if (option) option.textContent = newTitle; // 同步更新下拉選單
+}
+
+function saveTimersState() {
+    const timers = {};
+    document.querySelectorAll(".timer").forEach(timer => {
+        const id = timer.id;
+        const title = timer.querySelector(".title").textContent;
+        const timeDisplay = timer.querySelector("span");
+        const remainingTime = parseInt(timeDisplay.dataset.remainingTime, 10);
+        const isRunning = !!timeDisplay.timerId;
+
+        timers[id] = { title, remainingTime, isRunning };
+    });
+
+    const startAllButton = document.getElementById("start-all");
+    const state = {
+        timers,
+        isStartAllDisabled: startAllButton.disabled,
+    };
+
+    console.log("Saving state:", state); // 除錯訊息
+    localStorage.setItem("timersState", JSON.stringify(state));
 }
