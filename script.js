@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("Restoring saved state:", savedState); // 除錯訊息
 
     // 初始化計時器
-    for (let i = 1; i <= 10; i++) {
+    for (let i = 1; i <= 24; i++) {
         createTimer(i, savedState.timers[`timer${i}`]);
     }
 
